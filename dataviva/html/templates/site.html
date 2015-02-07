@@ -1,0 +1,455 @@
+<!-- extend from base layout -->
+{% extends "templates/base.html" %}
+
+{% block content %}
+<link type="text/css" rel="stylesheet" href="/static/js/libs/tooltipster/css/tooltipster.css">
+<script src="/static/js/libs/jquery-2.0.3.min.js"></script>
+<script
+ type="text/javascript"
+ src="/static/js/libs/tooltipster/js/jquery.tooltipster.min.js">
+</script>
+  <div id="header_container" class="lightbox">
+    <div id="header">
+
+    <div class="searchBox">
+	    <input type="text" autocomplete="false" name="searchFld_1" id="searchFld" class="searchFld"  placeholder="{%trans%}What would you like to learn more about?{%endtrans%}">
+    	<div class="searchResult"></div>
+    </div>
+      <a id="logo" href="{{ url_for('general.home') }}"></a>
+      <a id="apps" href="{{ url_for('apps.guide') }}" class="link{% if g.page_type == 'apps' or g.page_type == 'builder' %} active{% endif %}">{% trans %}Apps{% endtrans %}</a>
+      <div class="notice tooltip"  title="Dados atualizados:<br/><li>Exportações (2014)<li>Emprego formal (2013)">2</div>
+      <a id="profiles" href="{{ url_for('profiles.index') }}" class="link{% if g.page_type == 'profiles' or g.page_type == 'profile' %} active{% endif %}">{% trans %}Profiles{% endtrans %}</a>
+      <a id="guide" href="{{ url_for('guide.guide') }}" class="link{% if g.page_type == 'guide' or g.page_type == 'plan' %} active{% endif %}">{% trans %}Guide{% endtrans %}</a>
+      <a id="data" href="{{ url_for('data.index') }}" class="link{% if g.page_type == 'data' or g.page_type == 'query' or g.page_type == 'classifications' %} active{% endif %}">{% trans %}Data{% endtrans %}</a>
+      <a id="rankings" href="{{ url_for('rankings.index') }}" class="link{% if g.page_type == 'rankings' %} active{% endif %}">{% trans %}Rankings{% endtrans %}</a>
+      <a id="about" href="{{ url_for('about.contact') }}" class="link{% if g.page_type == 'about' %} active{% endif %}">{% trans %}Learn More{% endtrans %}</a>
+      <a id="search" href="#" class="link">{%trans%}Search{%endtrans%}</a>
+
+      <div id="nav_controls">
+
+        <div id="account">
+          {% if g.user.is_authenticated() %}
+            {{ g.user.nickname }}
+          {% else %}
+            {% trans %}Login{% endtrans %}
+          {% endif %}
+        </div>
+
+        <div id="language">
+          <input type="radio" name="language_select" onclick="change_language(this.value)"
+            id="en" value="en"{% if g.locale == 'en' %} checked{% endif %}>
+          <label for="en">en</label>
+          <input type="radio" name="language_select" onclick="change_language(this.value)"
+            id="pt" value="pt"{% if g.locale == 'pt' %} checked{% endif %}>
+          <label for="pt">pt</label>
+        </div>
+
+
+      </div>
+
+      {% if g.user.is_authenticated() %}
+      <div id="account_tooltip" style="display:none;">
+        <a class="account" href="{{ url_for('account.user', nickname=g.user.nickname) }}"><i class="fa fa-user"></i>{% trans %}Profile{% endtrans %}</a>
+        {% if g.user.is_admin() %}
+          <a class="account" href="{{ url_for('admin.admin') }}"><i class="fa fa-cogs"></i>{% trans %}Admin Panel{% endtrans %}</a>
+        {% endif %}
+        <a class="account" href="{{ url_for('account.logout') }}"><i class="fa fa-key"></i>{% trans %}Logout{% endtrans %}</a>
+
+      </div>
+      {% endif %}
+
+    </div>
+
+  </div>
+
+  {% if crumbs|length %}
+    <div id="breadcrumbs">
+      {% for crumb in crumbs %}
+        {% if crumb.current %}
+          <div class="decision short">{{ crumb.text }}</div>
+        {% else %}
+          <a href="{{ crumb.url }}" class="help short">{{ crumb.text }}</a>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div id="fullscreen"></div>
+
+  <div id="outer_container">
+    <div id="inner_container">
+      <div id="container">
+
+        {% for category, msg in get_flashed_messages(with_categories=true) %}
+        <div id="server_message">
+          <div class="decision flash-{{ category }}">
+            {{ msg|safe }}
+            <i id="close_message" class="fa fa-times-circle"></i>
+          </div>
+        </div>
+        {% endfor %}
+
+        {% block body %}
+        {% endblock %}
+
+      </div>
+    </div>
+  </div>
+
+  <div id="nav_footer" class="lightbox">
+
+    <!-- Open Data Link -->
+    <a class="opendata" href="http://opendefinition.org/" target="_blank">
+      <img alt="This material is Open Data" border="0"
+      src="http://assets.okfn.org/images/ok_buttons/od_80x15_red_green.png" />
+    </a>
+    <!-- /Open Data Link -->
+
+    <a href="http://www.fjp.gov.br/" class="logo fjp" target="_blank"></a>
+    <a href="http://www.fapemig.br/" class="logo fapemig" target="_blank"></a>
+    <a href="http://www.mg.gov.br/" class="logo governo" target="_blank"></a>
+
+    <a href="http://macroconnections.media.mit.edu/" class="logo mc" target="_blank"></a>
+    <a href="http://www.datawheel.us/" class="logo datawheel" target="_blank"></a>
+
+
+
+
+  </div>
+
+
+
+  <script type="text/javascript">
+
+    $(document).ready(function() {
+        $('.tooltip').tooltipster({
+                contentAsHTML: true,
+                position: 'bottom'
+            });
+    });
+
+
+    var crumbs = "{{crumbs|safe}}"
+
+    function change_language(l) {
+      window.location = "/set_lang/" + l + "/?next=" + window.location.pathname;
+    }
+
+    leon("$language_select").color("{{ g.color }}").size("small")
+
+    d3.select("#close_message").on(d3plus.evt.click,function(){
+      var div = d3.select("#server_message")
+      var timing = parseFloat(div.style("transition-duration"),10)*1000;
+      div.style("opacity",0);
+      setTimeout(function(){
+        div.remove();
+      },timing)
+    });
+
+    if ("{{ g.user.is_authenticated() }}" != "False") {
+
+      show_toggle = function() {
+        d3.select("#account").attr("class","active")
+        d3.select("#d3plus_tooltip_id_account").style("left", x).style("display","block")
+      }
+
+      hide_toggle = function() {
+        d3.select("#account").attr("class","")
+        d3.select("#d3plus_tooltip_id_account").style("display","none")
+      }
+
+      var language_html = d3.select("div#account_tooltip").html()
+      d3.select("div#account_tooltip").remove()
+	  diff_screen = ((window.outerWidth-parseInt(d3.select("#header").style("width").replace("px","")))/2)
+      var acct = d3.select("#account").node(),
+          w = acct.offsetWidth,
+          h = acct.offsetHeight,
+          x = (acct.offsetLeft+(w/2)+diff_screen),
+          y = acct.offsetTop+h
+
+      d3plus.tooltip.create({
+        "id": "account",
+        "x": x,
+        "y": y,
+        "arrow": true,
+        "align": "bottom center",
+        "mouseevents": true,
+        "html": language_html,
+        "width": "auto"
+      })
+
+      d3.select("#d3plus_tooltip_id_account")
+        .style("display","none")
+        .on(d3plus.evt.click,function(){
+          d3.event.stopPropagation()
+        })
+
+      d3.select("#account").on(d3plus.evt.click,function(){
+        if (this.className.indexOf("active") < 0) {
+          show_toggle()
+        }
+        else {
+          hide_toggle()
+        }
+        d3.event.stopPropagation()
+      })
+
+      d3.select("body").on(d3plus.evt.click,function(){
+        hide_toggle()
+      })
+
+    }
+    else {
+      d3.select("#account").on(d3plus.evt.click,function(){
+        login()
+      })
+    }
+
+    d3.select(".survey-block img").on("click", function(){
+    	if(this.getAttribute("open")==1) {
+	    	d3.select(this.parentNode).transition().style("bottom", "-322px");
+	    	d3.select(this).attr("open", 0)
+    	} else {
+    		d3.select(this.parentNode).transition().style("bottom", "0px");
+    		d3.select(this).attr("open", 1)
+    	}
+    })
+
+     d3.select("a#search").on(d3plus.evt.click, function() {
+     	d3.select(".searchBox").style("display","block").transition().style("width", "465px")
+       .each("end",function(){
+         d3.select(this).style("overflow","visible")
+         d3.select("#searchFld").node().focus()
+       });
+     	d3.event.preventDefault();
+     })
+
+    function closeSearch() {
+
+      d3.select(".searchBox").style("overflow","hidden")
+        .transition()
+        .style("width", "0px")
+
+      d3.select(".searchResult")
+        .transition()
+        .style("opacity", 0)
+        .each("end", function() {
+          d3.select(this).html("")
+          d3.select(".searchBox").style("display","none")
+          document.getElementById("searchFld").value = "";
+        })
+
+    }
+
+    d3.select(window).on(d3plus.evt.click, function() {
+
+    	var d3_target = d3.select(d3.event.target)
+
+      if ( !d3_target.classed("searchFld") && !d3_target.classed("searchBox") ) {
+
+        if( d3.select(".searchBox").style("width") === "465px" ) {
+          closeSearch()
+        }
+
+      }
+
+    })
+
+    var searchInterval = "";
+    d3.select(".searchFld").on("keyup", function(e) {
+
+    	clearInterval(searchInterval);
+
+      // Close search box if "esc" key is pressed
+      if ( d3.event.keyCode === 27 ) {
+        closeSearch()
+      }
+      else {
+        searchInterval = setTimeout(function(){
+          d3.select(".searchResult").style("display", "block")
+            .transition().delay(0).style("opacity", 1)
+          find_search(document.getElementById(d3.select(".searchFld").attr("id")).value)
+
+        },300)
+      }
+
+    })
+
+    find_search = function(search) {
+    d3.select(".searchResult").html("")
+  	if ( search !== "" ) {
+
+	    d3.json("/attrs/search/"+search+"/")
+	      .header("Content-type", "application/json")
+	      .send("GET", '', function(error, text) {
+
+          var litems = ""
+            , type_curr = "", $ct_bra = 1, $ct_cbo = 1, $ct_isic = 1, $ct_hs = 1, $ct_wld = 1;
+
+
+          if (!error) {
+
+            text.activities.forEach(function(item){
+
+              var urlSearch = item.content_type+"/"+item.id
+                , exclude = false;
+
+              if (typeof item.content_type !== "undefined") {
+
+                item.bg = item.color
+
+                if (item.content_type === "bra") {
+					if ( $ct_bra < 6 ) {
+					    if (item.id.length === 6) {
+					        exclude = true
+					    } else {
+					        type = "bra_" + item.id.length
+					        $ct_bra++;
+
+
+					        item.bg = "transparent"
+
+					        if (item.id !== "bra") {
+					            var icon = item.id.substr(0, 2);
+					        } else {
+					            var icon = "all";
+					        }
+				    	}
+				    } else {
+				    	exclude = true
+				    }
+
+				}
+
+				if (item.content_type === "cbo") {
+				    if ($ct_cbo < 6) {
+				        if (item.id.length === 1) {
+				            type = "cbo_1"
+				            icon = item.id
+				            $ct_cbo++;
+				        } else if (item.id.length === 4) {
+				            type = "cbo_4"
+				            icon = item.id.substr(0, 1)
+				            $ct_cbo++;
+				        } else {
+				            exclude = true
+				        }
+				    } else {
+				        exclude = true
+				    }
+				}
+
+				if (item.content_type === "isic") {
+				    if ($ct_isic < 6) {
+				        type = "isic_" + item.id.length
+				        icon = item.id;
+				        $ct_isic++;
+				    } else {
+				        exclude = true
+				    }
+				}
+
+
+				if (item.content_type === "hs") {
+
+				    if ($ct_hs < 6) {
+
+				        if (item.id.length == 2) {
+				            type = "hs_2"
+				            icon = item.id
+				            $ct_hs++;
+				        } else if (item.id.length == 6) {
+				            type = "hs_6"
+				            icon = item.id.substr(0, 2)
+				            $ct_hs++;
+				        } else {
+				            exclude = true
+
+				        }
+				    } else {
+				        exclude = true
+				    }
+
+				}
+
+				if (item.content_type === "wld") {
+				    if ($ct_wld < 6) {
+				        type = "wld_" + item.id.length
+				        icon = item.id
+
+				        if (item.id.length === 5) {
+				            item.bg = "transparent"
+				        }
+				        $ct_wld++;
+				    } else {
+				        exclude = true
+				    }
+				}
+
+				if (item.content_type === "learnmore") {
+
+				    type = ""
+				    icon = "icon"
+
+				}
+
+               if(exclude!=true) {
+
+                 if (type_curr !== item.content_type) {
+
+                   d3.select(".searchResult").append("div")
+                     .attr("class","selector_title")
+                     .text(dataviva.format.text(item.content_type+"_plural"))
+
+                   type_curr = item.content_type
+
+                 }
+                 else {
+
+                   d3.select(".searchResult").append("div")
+                     .attr("class","d3plus_tooltip_data_seperator")
+
+                 }
+
+                 var link = d3.select(".searchResult").append("a")
+                   .attr("class","search_result");
+
+                   if(item.content_type=="learnmore") {
+                   	link.attr("href","/about/question/"+item.id)
+                   } else {
+                   	link.attr("href","/profiles/"+urlSearch)
+                   }
+
+                 link.append("div")
+                   .attr("class","search_icon")
+                   .style("background-image","url(/static/img/icons/"+item.content_type+"/"+item.content_type+"_"+icon+".png)")
+                   .style("background-color",item.bg)
+
+                 var text = link.append("div")
+                   .attr("class","search_text")
+
+                 text.append("div")
+                   .attr("class","search_title")
+                   .style("color",d3plus.utils.darker_color(item.color))
+                   .text(item.name)
+
+                 text.append("div")
+                   .attr("class","search_sub")
+                   .text(dataviva.format.text(type))
+
+               }
+
+              }
+
+            })
+
+          }
+
+	      })
+
+      }
+    }
+
+  </script>
+
+{% endblock %}
